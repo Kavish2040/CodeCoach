@@ -15,6 +15,7 @@ function App() {
   const [transcript, setTranscript] = useState<TranscriptMessage[]>([])
   const [testResults, setTestResults] = useState<RunCodeResponse | null>(null)
   const [isRunning, setIsRunning] = useState(false)
+  const [cursorPosition, setCursorPosition] = useState<{ line: number; column: number }>({ line: 0, column: 0 })
 
   const handleTranscriptUpdate = (role: "user" | "agent", content: string) => {
     setTranscript(prev => [
@@ -169,6 +170,7 @@ function App() {
               <CodeEditor
                 code={code}
                 onChange={(value) => setCode(value || "")}
+                onCursorPositionChange={(line, column) => setCursorPosition({ line, column })}
                 language="python"
               />
             </div>
@@ -225,6 +227,7 @@ function App() {
               <VoiceAgent
                 problem={selectedProblem}
                 currentCode={code}
+                cursorPosition={cursorPosition}
                 onTranscriptUpdate={handleTranscriptUpdate}
                 onProblemSelected={handleProblemSelected}
               />

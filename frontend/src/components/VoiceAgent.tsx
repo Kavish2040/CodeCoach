@@ -7,11 +7,12 @@ import type { Problem } from "@/types"
 interface VoiceAgentProps {
   problem: Problem | null
   currentCode: string
+  cursorPosition: { line: number; column: number }
   onTranscriptUpdate: (role: "user" | "agent", content: string) => void
   onProblemSelected: (problem: Problem) => void
 }
 
-export function VoiceAgent({ problem, currentCode, onTranscriptUpdate, onProblemSelected }: VoiceAgentProps) {
+export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptUpdate, onProblemSelected }: VoiceAgentProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
@@ -129,12 +130,15 @@ export function VoiceAgent({ problem, currentCode, onTranscriptUpdate, onProblem
       type: "code_update",
       code: currentCode,
       problem: problem?.description || "",
+      cursor_line: cursorPosition.line,
+      cursor_column: cursorPosition.column,
     })
 
     console.log("=== SENDING CODE UPDATE ===")
     console.log("Room state:", targetRoom.state)
     console.log("Code length:", currentCode.length)
     console.log("Problem length:", problem?.description?.length || 0)
+    console.log("Cursor position:", `Line ${cursorPosition.line + 1}, Col ${cursorPosition.column + 1}`)
     console.log("Data to send:", data.substring(0, 200))
 
     const encoder = new TextEncoder()
@@ -154,7 +158,7 @@ export function VoiceAgent({ problem, currentCode, onTranscriptUpdate, onProblem
 
       return () => clearTimeout(timeoutId)
     }
-  }, [isConnected, room, currentCode, problem])
+  }, [isConnected, room, currentCode, problem, cursorPosition])
 
   return (
     <div className="space-y-3">

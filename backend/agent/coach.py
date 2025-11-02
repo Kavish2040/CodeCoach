@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 _vectorstore = None
 _room = None
-_shared_context = {"current_code": "", "current_problem": ""} 
+_shared_context = {"current_code": "", "current_problem": "", "cursor_line": None, "cursor_column": None} 
 
 
 class InterviewCoach(Agent):
@@ -32,11 +32,13 @@ class InterviewCoach(Agent):
     
     @function_tool()
     async def get_current_code_and_problem(self, context: RunContext) -> str:
-        """Gets the user's current code and problem description."""
+        """Gets the user's current code, problem description, and cursor position. CALL THIS ON EVERY TURN."""
         global _shared_context
         
         code = _shared_context.get("current_code", "")
         problem = _shared_context.get("current_problem", "")
+        cursor_line = _shared_context.get("cursor_line")
+        cursor_column = _shared_context.get("cursor_column")
         
         if not problem and not code:
             return "No problem selected and no code written yet."
@@ -49,7 +51,24 @@ class InterviewCoach(Agent):
             result_parts.append("[Current Problem]\nNo problem selected yet.")
         
         if code and code.strip():
-            result_parts.append(f"[User's Current Code]\n```python\n{code}\n```")
+            # Add line numbers to the code for reference
+            code_lines = code.split('\n')
+            numbered_code = '\n'.join([f"{i+1:3d} | {line}" for i, line in enumerate(code_lines)])
+            result_parts.append(f"[User's Current Code]\n```python\n{numbered_code}\n```")
+            
+            # Add cursor position information
+            if cursor_line is not None:
+                cursor_info = f"[Cursor Position]\nLine {cursor_line + 1}"
+                if cursor_column is not None:
+                    cursor_info += f", Column {cursor_column + 1}"
+                
+                # Show the specific line where cursor is
+                if 0 <= cursor_line < len(code_lines):
+                    current_line_content = code_lines[cursor_line]
+                    cursor_info += f"\nCurrent line content: `{current_line_content}`"
+                    cursor_info += f"\n\n💡 The user is actively working on line {cursor_line + 1}. Focus your feedback on this area if relevant."
+                
+                result_parts.append(cursor_info)
         else:
             result_parts.append("[User's Current Code]\nNo code written yet.")
         
@@ -119,6 +138,9 @@ async def entrypoint(ctx: JobContext):
             if message.get("type") == "code_update":
                 _shared_context["current_code"] = message.get("code", "")
                 _shared_context["current_problem"] = message.get("problem", "")
+                _shared_context["cursor_line"] = message.get("cursor_line")
+                _shared_context["cursor_column"] = message.get("cursor_column")
+                logger.info(f"Code updated. Cursor at line {_shared_context['cursor_line']}, col {_shared_context['cursor_column']}")
         except Exception as e:
             logger.error(f"Error processing data: {e}")
     
