@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react"
+import { MoveRight } from "lucide-react"
 import { CodeEditor } from "@/components/CodeEditor"
 import { VoiceAgent } from "@/components/VoiceAgent"
 import { Transcript } from "@/components/Transcript"
@@ -89,10 +91,65 @@ function App() {
               </div>
             )}
           </div>
+          <div className="flex items-center gap-3">
+            <SignedOut>
+              <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+                <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-900">
+                  Log in
+                </Button>
+              </SignInButton>
+              <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+                <Button size="sm" className="bg-[#20A83D] hover:bg-[#1A8F34] text-white">
+                  Sign up
+                </Button>
+              </SignInButton>
+            </SignedOut>
+            <SignedIn>
+              <UserButton 
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8"
+                  }
+                }}
+              />
+            </SignedIn>
+          </div>
         </div>
       </header>
 
       {/* Main Content - LeetCode Split Layout */}
+      <SignedOut>
+        <div className="w-full flex-1">
+          <div className="container mx-auto">
+            <div className="flex gap-8 py-20 lg:py-40 items-center justify-center flex-col">
+              <div>
+                <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+                  <Button variant="secondary" size="sm" className="gap-4">
+                    AI-Powered Interview Prep <MoveRight className="w-4 h-4" />
+                  </Button>
+                </SignInButton>
+              </div>
+              <div className="flex gap-4 flex-col">
+                <h1 className="text-5xl md:text-7xl max-w-2xl tracking-tighter text-center font-regular">
+                  Master Coding Interviews with Your AI Voice Coach
+                </h1>
+                <p className="text-lg md:text-xl leading-relaxed tracking-tight text-muted-foreground max-w-2xl text-center">
+                  Practice LeetCode problems with real-time voice feedback. Get personalized guidance, company-specific questions, and instant code analysis. It's like having a senior engineer coaching you 24/7.
+                </p>
+              </div>
+              <div className="flex flex-row gap-3">
+                <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+                  <Button size="lg" className="gap-4 bg-[#20A83D] hover:bg-[#1A8F34] text-white">
+                    Start Practicing Now <MoveRight className="w-4 h-4" />
+                  </Button>
+                </SignInButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SignedOut>
+
+      <SignedIn>
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel - Problem Description */}
         <div className="w-1/2 flex flex-col border-r border-gray-200 bg-white">
@@ -240,6 +297,7 @@ function App() {
           </div>
         </div>
       </div>
+      </SignedIn>
     </div>
   )
 }
