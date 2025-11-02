@@ -14,7 +14,6 @@ interface VoiceAgentProps {
 
 export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptUpdate, onProblemSelected }: VoiceAgentProps) {
   const [isConnected, setIsConnected] = useState(false)
-  
   const [isConnecting, setIsConnecting] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
   const [room, setRoom] = useState<Room | null>(null)

@@ -93,12 +93,12 @@ function App() {
           </div>
           <div className="flex items-center gap-3">
             <SignedOut>
-              <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+              <SignInButton mode="modal">
                 <Button variant="ghost" size="sm" className="text-gray-700 hover:text-gray-900">
                   Log in
                 </Button>
               </SignInButton>
-              <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+              <SignInButton mode="modal">
                 <Button size="sm" className="bg-[#20A83D] hover:bg-[#1A8F34] text-white">
                   Sign up
                 </Button>
@@ -123,7 +123,7 @@ function App() {
           <div className="container mx-auto">
             <div className="flex gap-8 py-20 lg:py-40 items-center justify-center flex-col">
               <div>
-                <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+                <SignInButton mode="modal">
                   <Button variant="secondary" size="sm" className="gap-4">
                     AI-Powered Interview Prep <MoveRight className="w-4 h-4" />
                   </Button>
@@ -138,7 +138,7 @@ function App() {
                 </p>
               </div>
               <div className="flex flex-row gap-3">
-                <SignInButton mode="modal" forceRedirectUrl="/sign-up">
+                <SignInButton mode="modal">
                   <Button size="lg" className="gap-4 bg-[#20A83D] hover:bg-[#1A8F34] text-white">
                     Start Practicing Now <MoveRight className="w-4 h-4" />
                   </Button>
