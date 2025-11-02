@@ -1,0 +1,25 @@
+# LiveKit voice agent
+livekit
+livekit-agents
+livekit-plugins-silero
+livekit-plugins-openai
+
+# AI & ML
+openai>=1.107.2
+langchain-openai
+langchain-community
+
+# Vector store
+chromadb
+
+# PDF processing
+pypdf
+
+# API server
+fastapi
+uvicorn[standard]
+python-dotenv
+
+# LeetCode integration
+httpx
+mcp
