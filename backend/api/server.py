@@ -53,7 +53,6 @@ async def root():
 
 @app.post("/token", response_model=TokenResponse)
 async def get_token(request: TokenRequest):
-    """Generates a LiveKit access token for the frontend."""
     livekit_url = os.getenv("LIVEKIT_URL")
     api_key = os.getenv("LIVEKIT_API_KEY")
     api_secret = os.getenv("LIVEKIT_API_SECRET")

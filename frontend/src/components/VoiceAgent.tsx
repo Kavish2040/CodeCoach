@@ -30,7 +30,6 @@ export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptU
         console.log("Connected to room")
         setIsConnected(true)
         setIsConnecting(false)
-        // Send initial code update if problem exists
         if (problem) {
           sendCodeUpdate(newRoom)
         }
