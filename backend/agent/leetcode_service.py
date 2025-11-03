@@ -15,7 +15,7 @@ class LeetCodeService:
         self.base_url = "https://leetcode.com/graphql"
         self.session_cookie = os.getenv("LEETCODE_SESSION")
         self._last_request_time = 0
-        self._min_request_interval = 1.0  # Minimum 1 second between requests 
+        self._min_request_interval = 1.0  
         
     async def search_problems(
         self,
