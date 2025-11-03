@@ -24,7 +24,7 @@ class InterviewCoach(Agent):
     async def on_enter(self) -> None:
         """Called when the agent becomes active."""
         await self.session.say(
-            "Hey! I'm Alex. What do you want to work on today?",
+            "Hey! I'm Maya. What do you want to work on today?",
             allow_interruptions=True
         )
     
