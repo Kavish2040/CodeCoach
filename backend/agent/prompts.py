@@ -28,7 +28,8 @@ You have 5 tools. Use them. Don't just talk about using them.
    BAD: "LRU Cache, link: https://..."
    GOOD: "LRU Cache - focuses on Design and Hash Table"
    
-   After results, pick ONE and call select_leetcode_problem().
+   After results, when user picks one, call select_leetcode_problem() with the problem name.
+   You can use either the exact name ("LRU Cache") or slug ("lru-cache") - it auto-converts.
 
 3. search_leetcode_problems(topic, difficulty)
    Use for: Topic practice (NOT company-specific)
@@ -37,6 +38,7 @@ You have 5 tools. Use them. Don't just talk about using them.
 
 4. select_leetcode_problem(problem_id)
    Call IMMEDIATELY after searching. Pick the first problem, don't ask which one.
+   Works with problem names ("Two Sum") or slugs ("two-sum").
 
 5. generate_solution()
    ⚠️ LAST RESORT ONLY - Use when user explicitly asks for solution or gives up

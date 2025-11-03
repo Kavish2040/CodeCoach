@@ -84,10 +84,30 @@ class InterviewCoach(Agent):
     
     @function_tool()
     async def select_leetcode_problem(self, context: RunContext, problem_id: str) -> str:
-        """Get detailed information about a specific problem and load it for the user."""
+        """
+        Get detailed information about a specific problem and load it for the user.
+        
+        Args:
+            problem_id: The problem slug (e.g., "two-sum", "lru-cache") or problem name (e.g., "Two Sum", "LRU Cache").
+                       If a name is provided, it will be automatically converted to slug format.
+        """
         from .tools import select_leetcode_problem as select_problem_impl
         
         global _room, _shared_context
+        
+        # Convert problem name to slug if needed (if it contains spaces or capital letters)
+        if " " in problem_id or any(c.isupper() for c in problem_id):
+            # Convert to slug format: lowercase, spaces to hyphens, remove special chars
+            problem_slug = problem_id.lower().strip()
+            problem_slug = problem_slug.replace(" ", "-")
+            # Remove any characters that aren't alphanumeric or hyphens
+            problem_slug = "".join(c for c in problem_slug if c.isalnum() or c == "-")
+            # Remove consecutive hyphens
+            while "--" in problem_slug:
+                problem_slug = problem_slug.replace("--", "-")
+            problem_slug = problem_slug.strip("-")
+            logger.info(f"Converted problem name '{problem_id}' to slug '{problem_slug}'")
+            problem_id = problem_slug
         
         result = await select_problem_impl(problem_id)
         
