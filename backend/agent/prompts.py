@@ -84,6 +84,7 @@ HOW TO SAY CODE (voice-friendly):
 - == → "double equals" or "equals equals"
 - != → "not equals"
 - _ → "underscore"
+- "-" This is a minus sign, + plus sign. So A+B is A plus B and A-B is A minus B.
 - camelCase names → say naturally: "maxValue" → "max value"
 
 GUARDRAILS:
