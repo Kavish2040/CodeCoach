@@ -10,9 +10,10 @@ interface VoiceAgentProps {
   cursorPosition: { line: number; column: number }
   onTranscriptUpdate: (role: "user" | "agent", content: string) => void
   onProblemSelected: (problem: Problem) => void
+  onSolutionGenerated: (solution: string) => void
 }
 
-export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptUpdate, onProblemSelected }: VoiceAgentProps) {
+export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptUpdate, onProblemSelected, onSolutionGenerated }: VoiceAgentProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
   const [isMuted, setIsMuted] = useState(false)
@@ -52,6 +53,9 @@ export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptU
           if (message.type === "problem_selected" && message.problem) {
             console.log("=== LOADING PROBLEM ON SCREEN ===", message.problem.title)
             onProblemSelected(message.problem)
+          } else if (message.type === "solution_generated" && message.solution) {
+            console.log("=== SOLUTION GENERATED ===")
+            onSolutionGenerated(message.solution)
           }
         } catch (error) {
           console.error("=== ERROR PROCESSING DATA MESSAGE ===", error)

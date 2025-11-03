@@ -1,5 +1,6 @@
 import os
 import logging
+import openai
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import JobContext, WorkerOptions, cli, AgentSession, Agent, llm, function_tool, RunContext
@@ -13,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 _room = None
-_shared_context = {"current_code": "", "current_problem": "", "cursor_line": None, "cursor_column": None} 
+_shared_context = {"current_code": "", "current_problem": "", "code_template": "", "cursor_line": None, "cursor_column": None} 
 
 
 class InterviewCoach(Agent):
@@ -86,7 +87,7 @@ class InterviewCoach(Agent):
         """Get detailed information about a specific problem and load it for the user."""
         from .tools import select_leetcode_problem as select_problem_impl
         
-        global _room
+        global _room, _shared_context
         
         result = await select_problem_impl(problem_id)
         
@@ -95,6 +96,8 @@ class InterviewCoach(Agent):
             result_data = json.loads(result)
             if result_data.get("success") and _room:
                 problem = result_data["problem"]
+                # Store the code template in shared context for solution generation
+                _shared_context["code_template"] = problem.get("codeTemplate", "")
                 await _room.local_participant.publish_data(
                     json.dumps({"type": "problem_selected", "problem": problem}).encode('utf-8'),
                     reliable=True
@@ -136,6 +139,98 @@ class InterviewCoach(Agent):
         result = await query_leetcode_rag(query)
         
         return result
+    
+    @function_tool()
+    async def generate_solution(self, context: RunContext) -> str:
+        """
+        Generate an optimal but easy-to-understand solution for the current problem.
+        Use this ONLY when the user explicitly asks for the solution or says they give up.
+        This should be a last resort after coaching attempts.
+        
+        Returns:
+            str: Status message indicating solution was generated and sent to the editor
+        """
+        global _shared_context, _room
+        
+        problem = _shared_context.get("current_problem", "")
+        code_template = _shared_context.get("code_template", "")
+        
+        if not problem:
+            return "No problem is currently loaded. Please select a problem first."
+        
+        # Let the user know we're generating the solution
+        await self.session.say(
+            "Alright, let me generate a clean solution for you. Give me a moment.",
+            allow_interruptions=True
+        )
+        
+        try:
+            # Use OpenAI to generate an optimal solution
+            import openai
+            
+            # Build the prompt with function definition if available
+            function_context = ""
+            if code_template:
+                function_context = f"""
+Function Definition (YOU MUST USE THIS EXACT SIGNATURE):
+```python
+{code_template}
+```
+"""
+            
+            solution_prompt = f"""You are an expert coding instructor. Generate a clean, optimal, and well-commented Python solution for this LeetCode problem.
+
+Problem:
+{problem}
+{function_context}
+Requirements:
+1. Write clean, readable Python code
+2. Use an optimal approach (best time/space complexity)
+3. Add helpful comments explaining the logic
+4. Keep it simple and easy to understand
+5. MUST use the exact function signature provided above (if given)
+6. Add a brief explanation at the top as a comment
+7. Include time and space complexity in comments
+
+Return ONLY the Python code, no markdown formatting or explanations outside the code."""
+
+            client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are an expert coding instructor who writes clean, optimal solutions. Always follow the exact function signature provided."},
+                    {"role": "user", "content": solution_prompt}
+                ],
+                temperature=0.3,
+                max_tokens=1500
+            )
+            
+            solution_code = response.choices[0].message.content.strip()
+            
+            # Remove markdown code blocks if present
+            if solution_code.startswith("```python"):
+                solution_code = solution_code.replace("```python", "").replace("```", "").strip()
+            elif solution_code.startswith("```"):
+                solution_code = solution_code.replace("```", "").strip()
+            
+            # Send the solution to the frontend
+            if _room:
+                import json
+                await _room.local_participant.publish_data(
+                    json.dumps({
+                        "type": "solution_generated",
+                        "solution": solution_code
+                    }).encode('utf-8'),
+                    reliable=True
+                )
+                logger.info("Solution generated and sent to frontend")
+            
+            return "Solution generated successfully and displayed in the code editor. Take your time to understand the approach and logic."
+            
+        except Exception as e:
+            logger.error(f"Error generating solution: {e}")
+            return f"Sorry, I encountered an error generating the solution: {str(e)}"
 
 
 async def entrypoint(ctx: JobContext):
@@ -166,7 +261,7 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         vad=silero.VAD.load(),
         stt=deepgram.STT(model="nova-3"), 
-        llm=lk_openai.LLM(model="gpt-4o-mini"),
+        llm=lk_openai.LLM(model="gpt-4o"),
         tts=cartesia.TTS(
             model="sonic-3", 
             voice="79a125e8-cd45-4c13-8a67-188112f4dd22", 

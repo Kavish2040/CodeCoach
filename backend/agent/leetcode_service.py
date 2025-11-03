@@ -3,6 +3,7 @@ import json
 import logging
 from typing import Optional, List, Dict
 import httpx
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,9 @@ class LeetCodeService:
     
     def __init__(self):
         self.base_url = "https://leetcode.com/graphql"
-        self.session_cookie = os.getenv("LEETCODE_SESSION") 
+        self.session_cookie = os.getenv("LEETCODE_SESSION")
+        self._last_request_time = 0
+        self._min_request_interval = 1.0  # Minimum 1 second between requests 
         
     async def search_problems(
         self,
@@ -61,8 +64,18 @@ class LeetCodeService:
         }
         
         try:
+            # Rate limiting: wait if needed
+            import time
+            current_time = time.time()
+            time_since_last = current_time - self._last_request_time
+            if time_since_last < self._min_request_interval:
+                await asyncio.sleep(self._min_request_interval - time_since_last)
+            
             async with httpx.AsyncClient() as client:
-                headers = {"Content-Type": "application/json"}
+                headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+                }
                 if self.session_cookie:
                     headers["Cookie"] = f"LEETCODE_SESSION={self.session_cookie}"
                 
@@ -70,19 +83,31 @@ class LeetCodeService:
                     self.base_url,
                     json={"query": query, "variables": variables},
                     headers=headers,
-                    timeout=10.0
+                    timeout=30.0  # Increased timeout
                 )
+                
+                self._last_request_time = time.time()
                 
                 if response.status_code == 200:
                     data = response.json()
+                    if "errors" in data:
+                        logger.error(f"LeetCode GraphQL errors: {data['errors']}")
+                        return []
                     problems = data.get("data", {}).get("problemsetQuestionList", {}).get("questions", [])
                     return [p for p in problems if not p.get("isPaidOnly", False)]
+                elif response.status_code == 429:
+                    logger.error("LeetCode API rate limit exceeded. Waiting 60 seconds...")
+                    await asyncio.sleep(60)
+                    return []
                 else:
-                    logger.error(f"LeetCode API error: {response.status_code}")
+                    logger.error(f"LeetCode API error: {response.status_code} - {response.text[:200]}")
                     return []
                     
+        except httpx.TimeoutException:
+            logger.error("LeetCode API timeout - request took too long")
+            return []
         except Exception as e:
-            logger.error(f"Error fetching LeetCode problems: {e}")
+            logger.error(f"Error fetching LeetCode problems: {e}", exc_info=True)
             return []
     
     async def get_problem_details(self, title_slug: str) -> Optional[Dict]:
@@ -115,8 +140,18 @@ class LeetCodeService:
         variables = {"titleSlug": title_slug}
         
         try:
+            # Rate limiting: wait if needed
+            import time
+            current_time = time.time()
+            time_since_last = current_time - self._last_request_time
+            if time_since_last < self._min_request_interval:
+                await asyncio.sleep(self._min_request_interval - time_since_last)
+            
             async with httpx.AsyncClient() as client:
-                headers = {"Content-Type": "application/json"}
+                headers = {
+                    "Content-Type": "application/json",
+                    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+                }
                 if self.session_cookie:
                     headers["Cookie"] = f"LEETCODE_SESSION={self.session_cookie}"
                 
@@ -124,11 +159,16 @@ class LeetCodeService:
                     self.base_url,
                     json={"query": query, "variables": variables},
                     headers=headers,
-                    timeout=10.0
+                    timeout=30.0  # Increased timeout
                 )
+                
+                self._last_request_time = time.time()
                 
                 if response.status_code == 200:
                     data = response.json()
+                    if "errors" in data:
+                        logger.error(f"LeetCode GraphQL errors: {data['errors']}")
+                        return None
                     question = data.get("data", {}).get("question")
                     
                     if question:
@@ -136,6 +176,10 @@ class LeetCodeService:
                     else:
                         logger.error(f"Problem not found: {title_slug}")
                         return None
+                elif response.status_code == 429:
+                    logger.error("LeetCode API rate limit exceeded. Waiting 60 seconds...")
+                    await asyncio.sleep(60)
+                    return None
                 else:
                     logger.error(f"LeetCode API error: {response.status_code}")
                     return None

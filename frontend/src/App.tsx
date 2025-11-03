@@ -39,6 +39,11 @@ function App() {
     }
   }
 
+  const handleSolutionGenerated = (solution: string) => {
+    setCode(solution)
+    setTestResults(null)
+  }
+
   const handleRunTests = async () => {
     if (!selectedProblem || !selectedProblem.testCases) {
       alert("No test cases available for this problem")
@@ -287,6 +292,7 @@ function App() {
                 cursorPosition={cursorPosition}
                 onTranscriptUpdate={handleTranscriptUpdate}
                 onProblemSelected={handleProblemSelected}
+                onSolutionGenerated={handleSolutionGenerated}
               />
             </div>
 
