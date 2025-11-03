@@ -99,7 +99,7 @@ function App() {
                 </Button>
               </SignInButton>
               <SignInButton mode="modal">
-                <Button size="sm" className="bg-[#20A83D] hover:bg-[#1A8F34] text-white">
+                <Button size="sm" className="bg-[#02636b] hover:bg-[#014a51] text-white">
                   Sign up
                 </Button>
               </SignInButton>
@@ -124,8 +124,8 @@ function App() {
             <div className="flex gap-8 py-20 lg:py-40 items-center justify-center flex-col">
               <div>
                 <SignInButton mode="modal">
-                  <Button variant="secondary" size="sm" className="gap-4">
-                    AI-Powered Interview Prep <MoveRight className="w-4 h-4" />
+                  <Button variant="secondary" size="sm">
+                    AI-Powered Interview Prep
                   </Button>
                 </SignInButton>
               </div>
@@ -139,7 +139,7 @@ function App() {
               </div>
               <div className="flex flex-row gap-3">
                 <SignInButton mode="modal">
-                  <Button size="lg" className="gap-4 bg-[#20A83D] hover:bg-[#1A8F34] text-white">
+                  <Button size="lg" className="gap-4 bg-[#02636b] hover:bg-[#014a51] text-white">
                     Start Practicing Now <MoveRight className="w-4 h-4" />
                   </Button>
                 </SignInButton>
