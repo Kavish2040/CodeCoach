@@ -165,11 +165,11 @@ async def entrypoint(ctx: JobContext):
 
     session = AgentSession(
         vad=silero.VAD.load(),
-        stt=deepgram.STT(model="nova-2"),  # Ultra-low latency STT (50-100ms)
+        stt=deepgram.STT(model="nova-3"), 
         llm=lk_openai.LLM(model="gpt-4o-mini"),
         tts=cartesia.TTS(
-            model="sonic-3",  # Ultra-low latency TTS (75-125ms)
-            voice="79a125e8-cd45-4c13-8a67-188112f4dd22",  # Confident British Male
+            model="sonic-3", 
+            voice="79a125e8-cd45-4c13-8a67-188112f4dd22", 
         ),
     )
     
