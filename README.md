@@ -1,4 +1,4 @@
-# CodeCoach 🎯
+# CodeCoach 
 
 **AI-powered voice coding coach for technical interview preparation**
 
@@ -6,36 +6,36 @@ Talk naturally with Maya, your AI interview coach, as you solve LeetCode problem
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### 🎙️ **Voice-First Coaching**
+### Voice-First Coaching
 - Natural conversation with an AI interviewer (no typing required)
 - Real-time transcription of your discussion
 - Contextual feedback based on your cursor position and code
 
-### 💻 **Live Code Analysis**
+### Live Code Analysis
 - Maya sees your code as you write it
 - Line-by-line guidance based on cursor position
 - Instant feedback on approach and complexity
 
-### 🔍 **Smart Problem Discovery**
+### Smart Problem Discovery
 - **Topic-based search**: "Find me array problems" or "Show me DP questions"
 - **Company-specific questions**: "What does Google ask?" or "Amazon medium problems"
 - Intelligent tag matching handles typos and common abbreviations (e.g., "dp" → "dynamic-programming")
 
-### 🏢 **Company Interview Intelligence**
+### Company Interview Intelligence
 - RAG-powered database of 1000+ company-specific LeetCode questions
 - Covers Google, Meta, Amazon, Microsoft, Apple, Netflix, and 20+ more companies
 - Query by company name and difficulty level
 
-### ⚡ **Interactive Code Editor**
+### Interactive Code Editor
 - Monaco Editor (VS Code's editor engine)
 - Python syntax highlighting and autocompletion
 - Run code against test cases instantly
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -69,7 +69,7 @@ Talk naturally with Maya, your AI interview coach, as you solve LeetCode problem
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Python 3.13+
@@ -127,7 +127,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 💬 How to Use
+## How to Use
 
 1. **Start a Session**: Click "Start Call" to connect with Maya
 2. **Choose a Problem**: 
@@ -147,7 +147,7 @@ Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 ---
 
-## 🧠 Technical Deep Dive
+## Technical Deep Dive
 
 ### Why LlamaIndex for RAG?
 
@@ -203,7 +203,7 @@ nodes = retriever.retrieve("Google medium problems")
 
 ---
 
-## 📦 Tech Stack
+## Tech Stack
 
 ### Backend
 | Technology | Purpose |
@@ -229,7 +229,7 @@ nodes = retriever.retrieve("Google medium problems")
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 codecoach/
@@ -278,7 +278,7 @@ codecoach/
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Environment Variables
 
@@ -303,7 +303,7 @@ VITE_API_URL=http://localhost:8000
 
 ---
 
-## 🔍 Advanced Usage
+## Advanced Usage
 
 ### Rebuild RAG Index
 
@@ -334,7 +334,7 @@ Google • Amazon • Meta • Microsoft • Apple • Netflix • Uber • Airb
 
 ---
 
-## 🎓 Example Queries
+## Example Queries
 
 ### Topic-Based
 - _"Show me array problems"_
@@ -354,7 +354,7 @@ Google • Amazon • Meta • Microsoft • Apple • Netflix • Uber • Airb
 
 ---
 
-## 🐳 Docker Deployment
+## Docker Deployment
 
 ```bash
 # Build and run with Docker Compose
@@ -365,7 +365,7 @@ docker-compose up --build
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! Areas for improvement:
 
@@ -377,13 +377,13 @@ Contributions welcome! Areas for improvement:
 
 ---
 
-## 📝 License
+## License
 
 MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **LiveKit** for the excellent voice agent SDK
 - **LlamaIndex** for making RAG simple and fast
@@ -392,7 +392,7 @@ MIT License - see [LICENSE](LICENSE) for details
 
 ---
 
-## 📧 Support
+## Support
 
 Having issues? Check out:
 - [LiveKit Documentation](https://docs.livekit.io)
@@ -401,4 +401,4 @@ Having issues? Check out:
 
 ---
 
-**Built with ❤️ for interview prep**
+**Built for interview preparation**
