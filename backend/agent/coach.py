@@ -3,17 +3,15 @@ import logging
 from dotenv import load_dotenv
 from livekit import agents, rtc
 from livekit.agents import JobContext, WorkerOptions, cli, AgentSession, Agent, llm, function_tool, RunContext
-from livekit.plugins import silero, openai as lk_openai
+from livekit.plugins import silero, openai as lk_openai, cartesia, deepgram
 
 from .prompts import COACH_SYSTEM_PROMPT
-from .rag import initialize_rag
 
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-_vectorstore = None
 _room = None
 _shared_context = {"current_code": "", "current_problem": "", "cursor_line": None, "cursor_column": None} 
 
@@ -74,16 +72,6 @@ class InterviewCoach(Agent):
         
         return "\n\n".join(result_parts)
     
-    @function_tool()
-    async def search_algorithm_concepts(self, context: RunContext, query: str) -> str:
-        """Searches the LeetCode company questions database for specific questions, difficulty levels, and frequency info."""
-        from .tools import search_algorithm_concepts as search_concepts_impl
-        
-        global _vectorstore
-        
-        result = await search_concepts_impl(query, _vectorstore)
-        
-        return result
     
     @function_tool()
     async def search_leetcode_problems(self, context: RunContext, topic: str, difficulty: str = None) -> str:
@@ -115,17 +103,48 @@ class InterviewCoach(Agent):
             logger.error(f"Error broadcasting problem: {e}")
         
         return result
+    
+    @function_tool()
+    async def query_company_leetcode_questions(self, context: RunContext, company_name: str, difficulty: str = None) -> str:
+        """
+        Query company-specific LeetCode interview questions from the knowledge base.
+        Use this when users ask about what questions specific companies ask in interviews.
+        
+        Args:
+            company_name: Name of the company (e.g., "Google", "Amazon", "Meta", "Microsoft")
+            difficulty: Optional difficulty filter ("easy", "medium", "hard")
+        
+        Returns:
+            str: Information about LeetCode questions asked by that company
+        """
+        from .rag import query_leetcode_rag
+        
+        # Let the user know we're checking the database
+        await self.session.say(
+            "Let me check the database for you, give me a moment.",
+            allow_interruptions=True
+        )
+        
+        # Build the query
+        query_parts = [f"{company_name} LeetCode interview questions"]
+        if difficulty:
+            query_parts.append(f"{difficulty} difficulty")
+        
+        query = " ".join(query_parts)
+        
+        logger.info(f"Querying RAG for: {query}")
+        result = await query_leetcode_rag(query)
+        
+        return result
 
 
 async def entrypoint(ctx: JobContext):
     """Main entrypoint for the LiveKit agent."""
-    global _vectorstore, _room, _shared_context
+    global _room, _shared_context
     
     logger.info(f"Starting interview coach agent for room: {ctx.room.name}")
     
     _room = ctx.room
-    rag = initialize_rag()
-    _vectorstore = rag.vectorstore if rag else None
     
     await ctx.connect()
     
@@ -143,12 +162,15 @@ async def entrypoint(ctx: JobContext):
                 logger.info(f"Code updated. Cursor at line {_shared_context['cursor_line']}, col {_shared_context['cursor_column']}")
         except Exception as e:
             logger.error(f"Error processing data: {e}")
-    
+
     session = AgentSession(
         vad=silero.VAD.load(),
-        stt=lk_openai.STT(),
-        llm=lk_openai.LLM(model="gpt-4o"),
-        tts=lk_openai.TTS(voice="alloy"),
+        stt=deepgram.STT(model="nova-2"),  # Ultra-low latency STT (50-100ms)
+        llm=lk_openai.LLM(model="gpt-4o-mini"),
+        tts=cartesia.TTS(
+            model="sonic-3",  # Ultra-low latency TTS (75-125ms)
+            voice="79a125e8-cd45-4c13-8a67-188112f4dd22",  # Confident British Male
+        ),
     )
     
     await session.start(room=ctx.room, agent=InterviewCoach())
@@ -165,7 +187,9 @@ def main():
         logger.error("Please set these in your .env file")
         return
     
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    cli.run_app(WorkerOptions(
+        entrypoint_fnc=entrypoint
+    ))
 
 
 if __name__ == "__main__":

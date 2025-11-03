@@ -1,231 +1,191 @@
-import os
+"""
+RAG (Retrieval-Augmented Generation) module for LeetCode company-specific questions.
+
+This module uses LlamaIndex to:
+- Index the leetcode.pdf document containing company-specific LeetCode questions
+- Retrieve relevant context when users ask about company interview questions
+- Provide accurate answers about which companies ask which problems
+"""
+
+import logging
+from pathlib import Path
 from typing import Optional
-from pypdf import PdfReader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_openai import OpenAIEmbeddings
-from langchain_community.vectorstores import Chroma
-from langchain_core.documents import Document
+
+from llama_index.core import (
+    SimpleDirectoryReader,
+    StorageContext,
+    VectorStoreIndex,
+    load_index_from_storage,
+    Settings,
+)
+from llama_index.embeddings.openai import OpenAIEmbedding
+from llama_index.llms.openai import OpenAI
+
+logger = logging.getLogger(__name__)
+
+# Paths
+THIS_DIR = Path(__file__).parent
+DATA_DIR = THIS_DIR.parent / "data"
+PERSIST_DIR = THIS_DIR / "rag_storage"
 
 
-class LeetCodeQuestionsRAG:
-    """Handles loading and querying the LeetCode company questions database."""
+class LeetCodeRAG:
+    """RAG system for company-specific LeetCode questions."""
     
-    def __init__(self, pdf_path: Optional[str] = None, persist_directory: str = "./chroma_db_leetcode"):
-        self.pdf_path = pdf_path
-        self.persist_directory = persist_directory
-        self.vectorstore = None
-        self.embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    def __init__(self):
+        """Initialize the RAG system."""
+        self.index: Optional[VectorStoreIndex] = None
+        self._initialize_settings()
+        self._load_or_create_index()
+    
+    def _initialize_settings(self):
+        """Configure LlamaIndex settings."""
+        Settings.embed_model = OpenAIEmbedding(model="text-embedding-3-small")
+        Settings.llm = OpenAI(model="gpt-4o-mini", temperature=0.1)
+        Settings.chunk_size = 2048  
+        Settings.chunk_overlap = 200 
         
-    def load_and_process_pdf(self) -> list[Document]:
-        """Loads PDF and converts to chunks."""
-        if not self.pdf_path or not os.path.exists(self.pdf_path):
-            return []
-        
-        reader = PdfReader(self.pdf_path)
-        
-        documents = [
-            Document(
-                page_content=page.extract_text(),
-                metadata={"page": page_num + 1, "source": self.pdf_path}
+        logger.info("LlamaIndex settings configured")
+    
+    def _load_or_create_index(self):
+        """Load existing index or create a new one from the PDF."""
+        try:
+            if PERSIST_DIR.exists():
+                logger.info(f"Loading existing index from {PERSIST_DIR}")
+                storage_context = StorageContext.from_defaults(persist_dir=str(PERSIST_DIR))
+                self.index = load_index_from_storage(storage_context)
+                logger.info("Index loaded successfully")
+            else:
+                logger.info("Creating new index from documents")
+                self._create_index()
+        except Exception as e:
+            logger.error(f"Error loading index: {e}")
+            logger.info("Attempting to create new index")
+            self._create_index()
+    
+    def _create_index(self):
+        """Create a new index from the PDF documents."""
+        try:
+            # Check if data directory exists
+            if not DATA_DIR.exists():
+                raise FileNotFoundError(f"Data directory not found: {DATA_DIR}")
+            
+            # Load documents
+            logger.info(f"Loading documents from {DATA_DIR}")
+            documents = SimpleDirectoryReader(
+                input_dir=str(DATA_DIR),
+                required_exts=[".pdf"]
+            ).load_data()
+            
+            if not documents:
+                raise ValueError(f"No PDF documents found in {DATA_DIR}")
+            
+            logger.info(f"Loaded {len(documents)} documents")
+            
+            # Create index
+            logger.info("Creating vector index...")
+            self.index = VectorStoreIndex.from_documents(
+                documents,
+                show_progress=True
             )
-            for page_num, page in enumerate(reader.pages)
-            if page.extract_text().strip()
-        ]
-        
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=3000,
-            chunk_overlap=500,
-            length_function=len,
-            separators=[
-                "\n" + "="*50,        # Major section dividers
-                "\n" + "━"*50,        # Unicode section lines
-                "\n" + "-"*50,        # Dash section lines
-                "\n" + "*"*50,        # Star section lines (common in PDFs)
-                "\n" + "#"*50,        # Hash section lines
-                "\nCOMPANY #",         # Company section starts
-                "\nEASY QUESTIONS",    # Difficulty section starts
-                "\nMEDIUM QUESTIONS",
-                "\nHARD QUESTIONS",
-                "\n\n\n",             # Triple newlines
-                "\n\n",               # Double newlines (paragraphs)
-                "\n",                 # Single newlines
-                ". ",                 # Sentence endings
-                "? ",                 # Question endings
-                "! ",                 # Exclamation endings
-                " ",                  # Word boundaries
-                ""                    # Character level (last resort)
-            ]
-        )
-        
-        chunks = text_splitter.split_documents(documents)
-        
-        import re
-        current_company = None
-        enhanced_chunks = []
-        
-        for chunk in chunks:
-            content = chunk.page_content
-            metadata = chunk.metadata.copy()
             
-            # Extract company name from patterns like:
-            # "COMPANY #1: Google", "Company 2: Meta", "COMPANY #15: Amazon"
-            # \s* = optional spaces, \d+ = digits, [\w\s&]+ = company names with spaces/ampersands
-            company_patterns = [
-                r'COMPANY\s*#?\s*\d+\s*:\s*([\w\s&]+?)(?:\n|$)',  # "COMPANY #1: Google Inc"
-                r'(?:^|\n)(Google|Meta|Amazon|Microsoft|Apple|Netflix|Uber|Airbnb|LinkedIn|Bloomberg|Adobe|Salesforce|Oracle|Tesla|Spotify|Dropbox|Stripe|Palantir|Coinbase|Robinhood|DoorDash|Instacart|Lyft|Pinterest|Snapchat|TikTok|ByteDance|Zoom|Slack|Atlassian|ServiceNow|Snowflake|Databricks|MongoDB|Redis|Elastic|Twilio|Square|PayPal|eBay|Shopify|Etsy|Zillow|Redfin|Expedia|Booking|Tripadvisor)(?:\s|:|\n)',  # Direct company names
-            ]
+            # Persist index
+            PERSIST_DIR.mkdir(parents=True, exist_ok=True)
+            self.index.storage_context.persist(persist_dir=str(PERSIST_DIR))
+            logger.info(f"Index created and persisted to {PERSIST_DIR}")
             
-            for pattern in company_patterns:
-                company_match = re.search(pattern, content, re.IGNORECASE)
-                if company_match:
-                    current_company = company_match.group(1).strip().lower()
-                    # Handle multi-word companies
-                    current_company = re.sub(r'\s+', '_', current_company)  # "Goldman Sachs" -> "goldman_sachs"
-                    break
-            
-            # Add company to metadata if we found one
-            if current_company:
-                metadata['company'] = current_company
-            
-            # Detect difficulty level from section headers (more flexible patterns)
-            # Matches: "EASY QUESTIONS", "Easy Problems", "EASY:", "Easy (10 problems)", etc.
-            difficulty_patterns = [
-                (r'EASY\s*(?:QUESTIONS?|PROBLEMS?|:|\()', 'easy'),
-                (r'MEDIUM\s*(?:QUESTIONS?|PROBLEMS?|:|\()', 'medium'), 
-                (r'HARD\s*(?:QUESTIONS?|PROBLEMS?|:|\()', 'hard'),
-                (r'BEGINNER\s*(?:QUESTIONS?|PROBLEMS?|:|\()', 'easy'),
-                (r'INTERMEDIATE\s*(?:QUESTIONS?|PROBLEMS?|:|\()', 'medium'),
-                (r'ADVANCED\s*(?:QUESTIONS?|PROBLEMS?|:|\()', 'hard'),
-            ]
-            
-            for pattern, difficulty in difficulty_patterns:
-                if re.search(pattern, content, re.IGNORECASE):
-                    metadata['difficulty'] = difficulty
-                    break
-            
-            # Mark overview sections for better filtering
-            if "Overview:" in content or "Top Topics" in content:
-                metadata['section_type'] = 'overview'
-            
-            # Extract common algorithm topics for better searchability
-            topics = []
-            topic_patterns = [
-                r'\b(array|arrays)\b', r'\b(string|strings)\b', r'\b(linked.?list)\b',
-                r'\b(tree|trees|binary.?tree)\b', r'\b(graph|graphs)\b', r'\b(dynamic.?programming|dp)\b',
-                r'\b(hash.?table|hash.?map|dictionary)\b', r'\b(stack|stacks)\b', r'\b(queue|queues)\b',
-                r'\b(heap|heaps|priority.?queue)\b', r'\b(sort|sorting)\b', r'\b(search|searching|binary.?search)\b',
-                r'\b(recursion|recursive)\b', r'\b(backtrack|backtracking)\b', r'\b(greedy)\b',
-                r'\b(two.?pointer|sliding.?window)\b', r'\b(bit.?manipulation)\b', r'\b(math|mathematics)\b'
-            ]
-            
-            for pattern in topic_patterns:
-                if re.search(pattern, content, re.IGNORECASE):
-                    topic_match = re.search(pattern, content, re.IGNORECASE)
-                    topics.append(topic_match.group(0).lower())
-            
-            if topics:
-                metadata['topics'] = list(set(topics))  # Remove duplicates
-            
-            enhanced_chunks.append(Document(page_content=content, metadata=metadata))
-        
-        return enhanced_chunks
+        except Exception as e:
+            logger.error(f"Error creating index: {e}")
+            raise
     
-    def create_vectorstore(self, chunks: list[Document]) -> None:
-        """Creates embeddings and stores them in ChromaDB."""
-        if not chunks:
-            return
+    async def query_company_questions(self, query: str, top_k: int = 5) -> str:
+        """
+        Query the RAG system for company-specific LeetCode questions.
         
-        self.vectorstore = Chroma.from_documents(
-            documents=chunks,
-            embedding=self.embeddings,
-            persist_directory=self.persist_directory
-        )
-    
-    def load_existing_vectorstore(self) -> bool:
-        """Loads an existing vectorstore if one exists."""
-        if os.path.exists(self.persist_directory):
-            try:
-                self.vectorstore = Chroma(
-                    persist_directory=self.persist_directory,
-                    embedding_function=self.embeddings
-                )
-                # Verify vectorstore is working by doing a test query
-                test_results = self.vectorstore.similarity_search("test", k=1)
-                return True
-            except Exception as e:
-                print(f"Error loading vectorstore: {e}")
-                return False
-        return False
-    
-    def setup(self, force_rebuild: bool = False) -> None:
-        """Main setup method. Call this to initialize RAG."""
-        if not force_rebuild and self.load_existing_vectorstore():
-            return
+        Args:
+            query: User's question about company interview questions
+            top_k: Number of relevant chunks to retrieve
         
-        chunks = self.load_and_process_pdf()
-        if chunks:
-            self.create_vectorstore(chunks)
-    
-    def search(self, query: str, k: int = 5, company: str = None, difficulty: str = None, topic: str = None) -> list[Document]:
-        """Searches the vectorstore for relevant chunks with optional metadata filtering."""
-        if self.vectorstore is None:
-            return []
+        Returns:
+            str: Answer based on retrieved context
+        """
+        if not self.index:
+            return "RAG system not initialized. Please check the logs."
         
         try:
-            filter_dict = {}
-            if company:
-                # Handle multi-word companies (e.g., "Goldman Sachs" -> "goldman_sachs")
-                company_clean = re.sub(r'\s+', '_', company.lower())
-                filter_dict['company'] = company_clean
-            if difficulty:
-                filter_dict['difficulty'] = difficulty.lower()
-            # Note: ChromaDB doesn't support array filtering easily, so topic filtering 
-            # would need to be done post-search or with a different approach
+            # Enhance query to better match company sections
+            # Add context keywords to improve retrieval
+            enhanced_query = f"COMPANY: {query} interview questions LeetCode problems difficulty topics"
             
-            results = self.vectorstore.similarity_search(query, k=k, filter=filter_dict) if filter_dict else self.vectorstore.similarity_search(query, k=k)
+            # Create retriever with more results to ensure we get the full company section
+            retriever = self.index.as_retriever(similarity_top_k=top_k)
             
-            # Post-filter by topic if specified
-            if topic and results:
-                topic_lower = topic.lower()
-                filtered_results = []
-                for doc in results:
-                    doc_topics = doc.metadata.get('topics', [])
-                    if any(topic_lower in doc_topic for doc_topic in doc_topics):
-                        filtered_results.append(doc)
-                return filtered_results[:k]  # Maintain k limit
+            # Retrieve relevant nodes
+            nodes = await retriever.aretrieve(enhanced_query)
             
-            return results
+            if not nodes:
+                return "I couldn't find relevant information about that company or topic in the LeetCode questions database."
+            
+            # Format the retrieved context
+            context_parts = []
+            for i, node in enumerate(nodes, 1):
+                content = node.get_content()
+                # Clean up the content
+                content = content.strip()
+                if content:
+                    # Add score for debugging (helps understand retrieval quality)
+                    score = node.score if hasattr(node, 'score') else 'N/A'
+                    logger.info(f"Retrieved chunk {i} with score {score}")
+                    context_parts.append(f"[Context {i}]\n{content}")
+            
+            context = "\n\n".join(context_parts)
+            
+            return context
+            
         except Exception as e:
-            print(f"Error during vector search: {e}")
-            return []
-
-
-def initialize_rag(pdf_path: Optional[str] = None) -> Optional[LeetCodeQuestionsRAG]:
-    """Helper function to initialize RAG system for LeetCode questions."""
-    if pdf_path is None:
-        possible_paths = [
-            "./data/Leetcode.pdf",
-            "../data/Leetcode.pdf",
-            "./data/leetcode.pdf",
-            "../data/leetcode.pdf",
-        ]
-        pdf_path = next((path for path in possible_paths if os.path.exists(path)), None)
+            logger.error(f"Error querying RAG: {e}")
+            return f"Error retrieving information: {str(e)}"
     
-    if pdf_path is None:
-        print("⚠ Warning: LeetCode PDF not found. RAG will not be available.")
-        return None
-    
-    try:
-        rag = LeetCodeQuestionsRAG(pdf_path=pdf_path)
-        rag.setup()
+    def rebuild_index(self):
+        """Force rebuild the index from scratch."""
+        logger.info("Rebuilding index from scratch")
         
-        # Verify vectorstore was loaded successfully
-        if rag.vectorstore is None:
-            print("⚠ Warning: Vectorstore failed to initialize")
-            return None
-            
-        print(f"✓ RAG initialized successfully with PDF: {pdf_path}")
-        return rag
-    except Exception as e:
-        print(f"⚠ Error initializing RAG: {e}")
-        return None
+        # Remove existing index
+        if PERSIST_DIR.exists():
+            import shutil
+            shutil.rmtree(PERSIST_DIR)
+            logger.info("Removed existing index")
+        
+        # Create new index
+        self._create_index()
+        logger.info("Index rebuilt successfully")
+
+
+# Global instance
+_rag_instance: Optional[LeetCodeRAG] = None
+
+
+def get_rag_instance() -> LeetCodeRAG:
+    """Get or create the global RAG instance."""
+    global _rag_instance
+    
+    if _rag_instance is None:
+        logger.info("Initializing RAG system")
+        _rag_instance = LeetCodeRAG()
+    
+    return _rag_instance
+
+
+async def query_leetcode_rag(query: str) -> str:
+    """
+    Convenience function to query the RAG system.
+    
+    Args:
+        query: User's question about company interview questions
+    
+    Returns:
+        str: Retrieved context from the LeetCode PDF
+    """
+    rag = get_rag_instance()
+    return await rag.query_company_questions(query)
+

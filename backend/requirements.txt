@@ -3,17 +3,11 @@ livekit
 livekit-agents
 livekit-plugins-silero
 livekit-plugins-openai
+livekit-plugins-cartesia
+livekit-plugins-deepgram
 
 # AI & ML
 openai>=1.107.2
-langchain-openai
-langchain-community
-
-# Vector store
-chromadb
-
-# PDF processing
-pypdf
 
 # API server
 fastapi
@@ -23,3 +17,10 @@ python-dotenv
 # LeetCode integration
 httpx
 mcp
+
+# RAG with LlamaIndex
+llama-index
+llama-index-core
+llama-index-embeddings-openai
+llama-index-llms-openai
+pypdf
