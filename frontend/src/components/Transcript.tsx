@@ -26,7 +26,7 @@ export function Transcript({ messages }: TranscriptProps) {
       >
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-gray-500 text-xs">
-            Your conversation with Alex will appear here
+            Your conversation with Maya will appear here
           </div>
         ) : (
           messages.map((message, index) => (
@@ -45,7 +45,7 @@ export function Transcript({ messages }: TranscriptProps) {
               >
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className="text-xs font-medium opacity-90">
-                    {message.role === "user" ? "You" : "Alex"}
+                    {message.role === "user" ? "You" : "Maya"}
                   </span>
                   <span className="text-xs opacity-60">
                     {message.timestamp.toLocaleTimeString([], {

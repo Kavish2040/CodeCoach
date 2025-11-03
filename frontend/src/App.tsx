@@ -194,7 +194,7 @@ function App() {
                 <div className="text-center max-w-md">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">Ready to Practice</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
-                    Start a session with Alex. Ask what topic you want to practice, and he'll guide you through selecting the right problems.
+                    Start a session with Maya. Ask what topic you want to practice, and she'll guide you through selecting the right problems.
                   </p>
                 </div>
               </div>

@@ -171,10 +171,10 @@ export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptU
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              Alex is listening. Speak anytime you need help.
+              Maya is listening. Speak anytime you need help.
             </>
           ) : (
-            "Connect with Alex for personalized guidance and problem selection."
+            "Connect with Maya for personalized guidance and problem selection."
           )}
         </p>
       </div>
