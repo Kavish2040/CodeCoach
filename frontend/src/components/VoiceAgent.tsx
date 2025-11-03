@@ -184,7 +184,7 @@ export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptU
           <Button
             onClick={startCall}
             disabled={isConnecting}
-            className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium h-9 rounded transition-colors"
+            className="flex-1 bg-[#20A83D] hover:bg-[#1A8F34] text-white text-sm font-medium h-9 rounded transition-colors"
           >
             {isConnecting ? "Connecting..." : "Start Session"}
           </Button>
