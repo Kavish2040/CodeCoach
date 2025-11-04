@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react"
 import { MoveRight } from "lucide-react"
+import { Analytics } from "@vercel/analytics/react"
 import { CodeEditor } from "@/components/CodeEditor"
 import { VoiceAgent } from "@/components/VoiceAgent"
 import { Transcript } from "@/components/Transcript"
@@ -304,6 +305,7 @@ function App() {
         </div>
       </div>
       </SignedIn>
+      <Analytics />
     </div>
   )
 }
