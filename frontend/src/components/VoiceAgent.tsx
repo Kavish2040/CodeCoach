@@ -81,8 +81,6 @@ export function VoiceAgent({ problem, currentCode, cursorPosition, onTranscriptU
           const audioElement = track.attach()
           audioElement.autoplay = true
           audioElement.volume = 1.0
-          
-          // Replace the audio element's source
           if (audioRef.current.parentElement) {
             audioRef.current.parentElement.replaceChild(audioElement, audioRef.current)
             audioRef.current = audioElement as HTMLAudioElement

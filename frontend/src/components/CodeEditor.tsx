@@ -10,10 +10,8 @@ interface CodeEditorProps {
 
 export function CodeEditor({ code, onChange, onCursorPositionChange, language = "python" }: CodeEditorProps) {
   const handleEditorDidMount = (editor: editor.IStandaloneCodeEditor) => {
-    // Track cursor position changes
     editor.onDidChangeCursorPosition((e) => {
       if (onCursorPositionChange) {
-        // Monaco uses 1-based line numbers, but we'll send 0-based to backend
         onCursorPositionChange(e.position.lineNumber - 1, e.position.column - 1)
       }
     })
